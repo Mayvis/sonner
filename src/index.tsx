@@ -824,9 +824,6 @@ const Toaster = React.forwardRef<HTMLElement, ToasterProps>(function Toaster(pro
             data-x-position={x}
             style={
               {
-                '--front-toast-height': `${heights[0]?.height || 0}px`,
-                '--width': `${TOAST_WIDTH}px`,
-                '--gap': `${gap}px`,
                 ...style,
                 ...assignOffset(offset, mobileOffset),
               } as React.CSSProperties
