@@ -183,6 +183,17 @@ const Toast = (props: ToastProps) => {
     });
   }, [mounted, toast.title, toast.description, setHeights, toast.id, toast.jsx, toast.action, toast.cancel]);
 
+  React.useLayoutEffect(() => {
+    const el = toastRef.current;
+    if (!el) return;
+
+    el.style.setProperty('--index', String(index));
+    el.style.setProperty('--toasts-before', String(index));
+    el.style.setProperty('--z-index', String(toasts.length - index));
+    el.style.setProperty('--offset', `${removed ? offsetBeforeRemove : offset.current}px`);
+    el.style.setProperty('--initial-height', expandByDefault ? 'auto' : `${initialHeight}px`);
+  }, [index, toasts.length, removed, offsetBeforeRemove, offset.current, expandByDefault, initialHeight]);
+
   const deleteToast = React.useCallback(() => {
     // Save the offset for the exit swipe animation
     setRemoved(true);
@@ -293,11 +304,6 @@ const Toast = (props: ToastProps) => {
       data-testid={toast.testId}
       style={
         {
-          '--index': index,
-          '--toasts-before': index,
-          '--z-index': toasts.length - index,
-          '--offset': `${removed ? offsetBeforeRemove : offset.current}px`,
-          '--initial-height': expandByDefault ? 'auto' : `${initialHeight}px`,
           ...style,
           ...toast.style,
         } as React.CSSProperties
@@ -770,6 +776,13 @@ const Toaster = React.forwardRef<HTMLElement, ToasterProps>(function Toaster(pro
     }
   }, [listRef.current]);
 
+  const olStyles = {
+    '--front-toast-height': `${heights[0]?.height || 0}px`,
+    '--width': `${TOAST_WIDTH}px`,
+    '--gap': `${gap}px`,
+    ...assignOffset(offset, mobileOffset),
+  };
+
   return (
     // Remove item from normal navigation flow, only available via hotkey
     <section
@@ -792,7 +805,18 @@ const Toaster = React.forwardRef<HTMLElement, ToasterProps>(function Toaster(pro
             key={position}
             dir={dir === 'auto' ? getDocumentDirection() : dir}
             tabIndex={-1}
-            ref={listRef}
+            ref={(el) => {
+              // CSP-safe: Use setProperty instead of inline style for CSS variables
+              if (el) {
+                Object.entries(olStyles).forEach(([key, value]) => {
+                  if (key.startsWith('--')) {
+                    el.style.setProperty(key, String(value));
+                  }
+                });
+              }
+              // Also set the original listRef
+              listRef.current = el;
+            }}
             className={className}
             data-sonner-toaster
             data-sonner-theme={actualTheme}
